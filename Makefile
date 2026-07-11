@@ -4,7 +4,9 @@ build:
 
 # Run the container
 run:
-	docker run -d \
+	docker run -it --rm \
 		--name redis-implementation \
 		-p 9999:9999 \
 		redis-implementation:latest
+
+build-and-run:build run
