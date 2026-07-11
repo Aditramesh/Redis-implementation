@@ -96,6 +96,14 @@ func EvalTTL(args []string, c io.ReadWriter) error {
 	return nil
 }
 
+func EvalDEL(args []string, c io.ReadWriter) error {
+	if len(args) < 1 {
+		errors.New("(error) ERR wrong number of arguments for 'DEL' command")
+	}
+	c.Write(Encode(Del(args), false))
+	return nil
+}
+
 func EvalAndRespond(cmd *RedisCmd, c io.ReadWriter) error {
 	switch cmd.Cmd {
 	case "PING":
@@ -106,6 +114,8 @@ func EvalAndRespond(cmd *RedisCmd, c io.ReadWriter) error {
 		return EvalGet(cmd.Args, c)
 	case "TTL":
 		return EvalTTL(cmd.Args, c)
+	case "DEL":
+		return EvalDEL(cmd.Args, c)
 	default:
 		return EvalPING(cmd.Args, c)
 	}

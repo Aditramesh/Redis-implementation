@@ -34,3 +34,14 @@ func Put(k string, obj *Obj) {
 func Get(k string) *Obj {
 	return store[k]
 }
+
+func Del(keys []string) int64 {
+	keys_deleted := 0
+	for _, key := range keys {
+		if _, ok := store[key]; ok {
+			keys_deleted++
+		}
+		delete(store, key)
+	}
+	return int64(keys_deleted)
+}
