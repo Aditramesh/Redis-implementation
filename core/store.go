@@ -28,6 +28,9 @@ func NewObj(value interface{}, durationMS int64) *Obj {
 }
 
 func Put(k string, obj *Obj) {
+	if len(store) >= KeysLimit {
+		evict()
+	}
 	store[k] = obj
 }
 
