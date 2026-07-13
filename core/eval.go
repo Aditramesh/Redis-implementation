@@ -66,6 +66,7 @@ func EvalGet(args []string, c io.ReadWriter) error {
 
 	if obj == nil {
 		c.Write(RESP_NIL)
+		return nil
 	}
 	if obj.ExpiresAt != -1 && obj.ExpiresAt < time.Now().UnixMilli() {
 		c.Write(RESP_NIL)
@@ -87,6 +88,11 @@ func EvalTTL(args []string, c io.ReadWriter) error {
 		return nil
 	}
 
+	if obj.ExpiresAt == -1 {
+		c.Write([]byte(":-1\r\n"))
+		return nil
+	}
+
 	durationMs := obj.ExpiresAt - time.Now().UnixMilli()
 	if durationMs < 0 {
 		c.Write([]byte(":-2\r\n"))
@@ -104,6 +110,29 @@ func EvalDEL(args []string, c io.ReadWriter) error {
 	return nil
 }
 
+func EvalExpire(args []string, c io.ReadWriter) error {
+	if len(args) <= 1 {
+		errors.New("(error) ERR wrong number of arguments for 'EXPIRE' command")
+	}
+	var key string = args[0]
+
+	exDurationSec, err := strconv.ParseInt(args[1], 10, 64)
+
+	if err != nil {
+		return errors.New("(error) ERR value is not an integer or out of range")
+	}
+
+	obj := Get(key)
+	if obj == nil {
+		c.Write([]byte(":0\r\n"))
+		return nil
+	}
+
+	obj.ExpiresAt = time.Now().UnixMilli() + exDurationSec*1000
+	c.Write([]byte(":1\r\n"))
+	return nil
+}
+
 func EvalAndRespond(cmd *RedisCmd, c io.ReadWriter) error {
 	switch cmd.Cmd {
 	case "PING":
@@ -116,6 +145,8 @@ func EvalAndRespond(cmd *RedisCmd, c io.ReadWriter) error {
 		return EvalTTL(cmd.Args, c)
 	case "DEL":
 		return EvalDEL(cmd.Args, c)
+	case "EXPIRE":
+		return EvalExpire(cmd.Args, c)
 	default:
 		return EvalPING(cmd.Args, c)
 	}

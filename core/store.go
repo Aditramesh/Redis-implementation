@@ -32,10 +32,17 @@ func Put(k string, obj *Obj) {
 }
 
 func Get(k string) *Obj {
-	return store[k]
+	obj := store[k]
+	if obj != nil {
+		if obj.ExpiresAt <= time.Now().UnixMilli() && obj.ExpiresAt != -1 {
+			delete(store, k)
+			return nil
+		}
+	}
+	return obj
 }
 
-func Del(keys []string) int64 {
+func Del(keys []string) int {
 	keys_deleted := 0
 	for _, key := range keys {
 		if _, ok := store[key]; ok {
@@ -43,5 +50,5 @@ func Del(keys []string) int64 {
 		}
 		delete(store, key)
 	}
-	return int64(keys_deleted)
+	return keys_deleted
 }
