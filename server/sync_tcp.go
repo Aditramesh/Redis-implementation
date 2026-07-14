@@ -5,36 +5,29 @@ import (
 	"io"
 	"log"
 	"net"
-	"strings"
 
 	"github.com/Aditramesh/Redis-implementation/core"
 )
 
-func readCommand(c io.ReadWriter) (*core.RedisCmd, error) {
+func readCommands(c io.ReadWriter) ([]*core.RedisCmd, error) {
 	var buf []byte = make([]byte, 512)
 	n, err := c.Read(buf[:])
 	if err != nil {
 		return nil, err
 	}
-	tokens, err := core.DecodeArrayString(buf[:n])
+	commands, err := core.DecodeArrayString(buf[:n])
 	if err != nil {
 		return nil, err
 	}
-	return &core.RedisCmd{
-		Cmd:  strings.ToUpper(tokens[0]),
-		Args: tokens[1:],
-	}, nil
+	return commands, nil
 }
 
 func respondError(err error, c io.ReadWriter) {
 	c.Write([]byte(fmt.Sprintf("-%s\r\n", err)))
 }
 
-func respond(cmd *core.RedisCmd, c io.ReadWriter) error {
-	err := core.EvalAndRespond(cmd, c)
-	if err != nil {
-		respondError(err, c)
-	}
+func respond(cmds []*core.RedisCmd, c io.ReadWriter) error {
+	core.EvalAndRespond(cmds, c)
 	return nil
 }
 
@@ -56,7 +49,7 @@ func RunTCPSyncServer() {
 		fmt.Println("client connected with addr", c.RemoteAddr(), "conn_clients", conn_clients)
 
 		for {
-			cmd, err := readCommand(c)
+			cmds, err := readCommands(c)
 			if err != nil {
 				c.Close()
 				conn_clients--
@@ -66,8 +59,8 @@ func RunTCPSyncServer() {
 				}
 				log.Println("err:", err)
 			}
-			log.Println("command", cmd)
-			respond(cmd, c)
+			log.Println("command", cmds)
+			respond(cmds, c)
 		}
 	}
 }

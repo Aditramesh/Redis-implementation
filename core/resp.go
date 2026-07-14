@@ -78,31 +78,51 @@ func readArray(data []byte) (interface{}, int, error) {
 		pos += delta
 	}
 	return elements, pos, nil
-
 }
 
-func DecodeArrayString(data []byte) ([]string, error) {
-	value, err := Decode(data)
+func DecodeArrayString(data []byte) ([]*RedisCmd, error) {
+	values, err := Decode(data)
 	if err != nil {
 		return nil, err
 	}
-	ts := value.([]interface{})
-	tokens := make([]string, len(ts))
-	for i := range tokens {
-		tokens[i] = ts[i].(string)
+	var commands []*RedisCmd
+	for _, value := range values {
+		ts := value.([]interface{})
+		tokens := make([]string, len(ts))
+		for i := range tokens {
+			tokens[i] = ts[i].(string)
+		}
+		command := &RedisCmd{
+			Cmd:  tokens[0],
+			Args: tokens[1:],
+		}
+		commands = append(commands, command)
 	}
-	return tokens, nil
+	return commands, nil
 }
 
-func Decode(data []byte) (interface{}, error) {
+func Decode(data []byte) ([]interface{}, error) {
 	if len(data) == 0 {
 		return nil, errors.New("no data")
 	}
-	value, _, err := DecodeOne(data)
-	return value, err
+	pos := 0
+	var commands []interface{}
+	for pos < len(data) {
+		value, delta, err := DecodeOne(data[pos:])
+		if err != nil {
+			return commands, err
+		}
+		commands = append(commands, value)
+		pos = pos + delta
+	}
+	fmt.Println(commands)
+	return commands, nil
 }
 
 func Encode(value interface{}, isSimple bool) []byte {
+	// value.(type) creates a new variable v and makes it have one concrete type, one out of the switch statements instead of being an interface with unknown type. A new variable with
+	// the value and type is created at another location. This only works with switch statements because go is statically types adn the compiler needs to assign memory at compile
+	// time
 	switch v := value.(type) {
 	case string:
 		if isSimple {
