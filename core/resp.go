@@ -115,7 +115,6 @@ func Decode(data []byte) ([]interface{}, error) {
 		commands = append(commands, value)
 		pos = pos + delta
 	}
-	fmt.Println(commands)
 	return commands, nil
 }
 

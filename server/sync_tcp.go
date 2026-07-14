@@ -59,7 +59,6 @@ func RunTCPSyncServer() {
 				}
 				log.Println("err:", err)
 			}
-			log.Println("command", cmds)
 			respond(cmds, c)
 		}
 	}
