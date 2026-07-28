@@ -118,6 +118,10 @@ func Decode(data []byte) ([]interface{}, error) {
 	return commands, nil
 }
 
+func encodeString(v string) []byte {
+	return []byte(fmt.Sprintf("$%d\r\n%s\r\n", len(v), v))
+}
+
 func Encode(value interface{}, isSimple bool) []byte {
 	// value.(type) creates a new variable v and makes it have one concrete type, one out of the switch statements instead of being an interface with unknown type. A new variable with
 	// the value and type is created at another location. This only works with switch statements because go is statically types adn the compiler needs to assign memory at compile
@@ -130,6 +134,16 @@ func Encode(value interface{}, isSimple bool) []byte {
 		return []byte(fmt.Sprintf("$%d\r\n%s\r\n", len(v), v))
 	case int, int8, int16, int32, int64:
 		return []byte(fmt.Sprintf(":%d\r\n", v))
+	case []string:
+		var bufArr []byte
+		// buff := bytes.NewBuffer(bufArr)
+		// for _, b := range value.([]string) {
+		// 	buff.Write(encodeString(b))
+		// }
+		for _, s := range v {
+			bufArr = append(bufArr, encodeString(s)...)
+		}
+		return []byte(fmt.Sprintf("*%d\r\n%s", len(v), bufArr))
 	default:
 		return RESP_NIL
 	}

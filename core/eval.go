@@ -3,8 +3,11 @@ package core
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -126,6 +129,26 @@ func evalExpire(args []string) []byte {
 	return []byte(":1\r\n")
 }
 
+func evalBgAofWrite(args []string) []byte {
+	aof_file, err := os.OpenFile(
+		"aof.txt",
+		os.O_CREATE|os.O_WRONLY,
+		os.ModeAppend,
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer aof_file.Close()
+
+	for key, obj := range store {
+		inst := fmt.Sprintf("SET %s %s", key, obj.Value)
+		tokens := strings.Split(inst, " ")
+		fmt.Println(tokens)
+		aof_file.Write(Encode(tokens, false))
+	}
+	return RESP_OK
+}
+
 func EvalAndRespond(cmds []*RedisCmd, c io.ReadWriter) {
 	var responses []byte
 	buf := bytes.NewBuffer(responses)
@@ -143,6 +166,8 @@ func EvalAndRespond(cmds []*RedisCmd, c io.ReadWriter) {
 			buf.Write(evalDEL(cmd.Args))
 		case "EXPIRE":
 			buf.Write(evalExpire(cmd.Args))
+		case "BGAOFWRITE":
+			buf.Write(evalBgAofWrite(cmd.Args))
 		default:
 			buf.Write(evalPING(cmd.Args))
 		}
